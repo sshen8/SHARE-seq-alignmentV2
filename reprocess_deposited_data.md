@@ -13,8 +13,8 @@ GGGCTACACAGAGAAACCCTGTCTCGAAAAACAAACAAAACAAAACAAAA\
 FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
 
 2. Run these lines to modify the header and convert the format to be compatable with SHARE-seq pipeline. \
-cat SRR19912835_1.fastq | awk '{if(NR%4==1) print "@"$2; else if(NR%4==2) print; else if(NR%4==3) print "+"; else if(NR%4==3) print $0}' | bgzip > speciesmix.ATAC.R1.fastq.gz\
-cat SRR19912835_2.fastq | awk '{if(NR%4==1) print "@"$2; else if(NR%4==2) print; else if(NR%4==3) print "+"; else if(NR%4==3) print $0}' | bgzip > speciesmix.ATAC.R2.fastq.gz
+cat SRR19912835_1.fastq | awk '{if(NR%4==1) print "@"$2; else if(NR%4==2) print; else if(NR%4==3) print "+"; else if(NR%4==0) print $0}' | bgzip > speciesmix.ATAC.R1.fastq.gz\
+cat SRR19912835_2.fastq | awk '{if(NR%4==1) print "@"$2; else if(NR%4==2) print; else if(NR%4==3) print "+"; else if(NR%4==0) print $0}' | bgzip > speciesmix.ATAC.R2.fastq.gz
 
 The new read looks like:\
 zless speciesmix.ATAC.R1.fastq.gz | head -4\

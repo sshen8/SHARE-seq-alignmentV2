@@ -3,6 +3,8 @@
 # Last modified date: 2022/10/07
 # Designed for processing share-V2
 
+set -e # exit when error
+
 # input file
 # 1) yaml
 # 2) BCL or fastq or demultiplexed fastqs
@@ -131,14 +133,14 @@ if [ "$Start" = Bcl ]; then
 fi
 
 if [ "$Start" = Demultiplexed ]; then
-    mkdir $dir/fastqs/
     noProj=${#Project[@]}
     echo "link fastqs"
     for (( i=0; i< $noProj; i++ )); do
 	if [ -f $rawdir/${Project[$i]}.R1.fastq.gz  ]; then 
 	    echo "link" ${Project[$i]} fastqs
-	    ln -s $rawdir/${Project[$i]}.R1.fastq.gz $dir/fastqs/${Project[$i]}.R1.fastq.gz
-	    ln -s $rawdir/${Project[$i]}.R2.fastq.gz $dir/fastqs/${Project[$i]}.R2.fastq.gz
+		# f option forces link overwrite so that error won't occur when re-run the script
+	    ln -sf $rawdir/${Project[$i]}.R1.fastq.gz $dir/fastqs/${Project[$i]}.R1.fastq.gz
+	    ln -sf $rawdir/${Project[$i]}.R2.fastq.gz $dir/fastqs/${Project[$i]}.R2.fastq.gz
 	else
 	    echo "Error...couldn't find" ${Project[$i]}.R1.fastq.gz
 	fi
@@ -171,7 +173,7 @@ if [ "$Start" = Fastq ]; then
     echo "Run number is:" $Run
 
     # split fastqs
-    mkdir $dir/smallfastqs/
+	if [ ! -d $dir/smallfastqs ]; then mkdir $dir/smallfastqs; fi
     if [ -f $dir/smallfastqs/0001.1.$Run.R2.fastq.gz ]; then
         echo "Found 0001.$Run.R2.fastq, skip split fastqs"
     else
@@ -194,10 +196,10 @@ if [ "$Start" = Fastq ]; then
 	    # Runing full pipeline
 	    echo "Split fastqs to small files"
 	    dosplitfull(){
-                /mnt/users/sai/Package/fastp/fastp -i $2/R1.$1.fastq.gz -o $2/smallfastqs/$1.$3.R1.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
-                /mnt/users/sai/Package/fastp/fastp -i $2/R2.$1.fastq.gz -o $2/smallfastqs/$1.$3.R2.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
-                /mnt/users/sai/Package/fastp/fastp -i $2/I1.$1.fastq.gz -o $2/smallfastqs/$1.$3.I1.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
-                /mnt/users/sai/Package/fastp/fastp -i $2/I2.$1.fastq.gz -o $2/smallfastqs/$1.$3.I2.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+                fastp -i $2/R1.$1.fastq.gz -o $2/smallfastqs/$1.$3.R1.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+                fastp -i $2/R2.$1.fastq.gz -o $2/smallfastqs/$1.$3.R2.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+                fastp -i $2/I1.$1.fastq.gz -o $2/smallfastqs/$1.$3.I1.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+                fastp -i $2/I2.$1.fastq.gz -o $2/smallfastqs/$1.$3.I2.fastq.gz -S 80000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
 		wait
             }
             export -f dosplitfull
@@ -206,10 +208,10 @@ if [ "$Start" = Fastq ]; then
 	    # Runing QC pipeline
 	    echo "Split fastqs to small files"
 	    dosplitQC(){
-		/mnt/users/sai/Package/fastp/fastp -i $2/R1.$1.fastq.gz -o $2/smallfastqs/$1.$3.R1.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
-		/mnt/users/sai/Package/fastp/fastp -i $2/R2.$1.fastq.gz -o $2/smallfastqs/$1.$3.R2.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
-		/mnt/users/sai/Package/fastp/fastp -i $2/I1.$1.fastq.gz -o $2/smallfastqs/$1.$3.I1.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
-		/mnt/users/sai/Package/fastp/fastp -i $2/I2.$1.fastq.gz -o $2/smallfastqs/$1.$3.I2.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+		fastp -i $2/R1.$1.fastq.gz -o $2/smallfastqs/$1.$3.R1.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+		fastp -i $2/R2.$1.fastq.gz -o $2/smallfastqs/$1.$3.R2.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+		fastp -i $2/I1.$1.fastq.gz -o $2/smallfastqs/$1.$3.I1.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
+		fastp -i $2/I2.$1.fastq.gz -o $2/smallfastqs/$1.$3.I2.fastq.gz --reads_to_process $4 -S 4000000 --thread 1 -d 4 -A -G -L -Q 2>>$2/split.log &
 		wait
             }
             export -f dosplitQC
@@ -250,7 +252,7 @@ if [ "$Start" = Fastq ]; then
 	    # --qc # option is available to process even smaller number of reads
 	fi
     fi
-    rm filesr1.xls filesr2.xls filesi1.xls filesi2.xls
+    rm -f filesr1.xls filesr2.xls filesi1.xls filesi2.xls
     if [ -f Filelist2.xls ]; then
 	rm Filelist2.xls
     fi
@@ -344,7 +346,8 @@ for Name in ${Project[@]}; do
 				awk -v OFS='\t' '{if ($1 ~ /NNNNNNNNNN/) print $0, "PT:i:0"; else print $0, "PT:i:1"}') | samtools view -@ $cores -bS > $dir/fastqs/$Name.$Species.bam
 			    rm  $dir/fastqs/$Name.$Species.header.sam $dir/fastqs/$Name.$Species.Aligned.out.bam				
 			fi
-                        rm -r *_STARtmp *Log.progress.out *SJ.out.tab
+			# f option so that error won't occur if can't find file to be deleted
+			rm -rf *_STARtmp *Log.progress.out *SJ.out.tab
 			mv $dir/fastqs/$Name.$Species.Log.final.out $dir/fastqs/$Name.$Species.align.log
 		    fi
 		else
@@ -360,7 +363,6 @@ for Name in ${Project[@]}; do
 		    samtools index -@ $cores $Name.$Species.st.bam
 		    rm $Name.$Species.bam
 		fi
-		# exit		
 		# Update RGID's and Headers
 		if [ -f $dir/fastqs/$Name.$Species.rigid.reheader.st.bam.bai ]; then
 		    echo "Found $Name.$Species.rigid.reheader.st.bam, skip update RGID"
@@ -378,7 +380,7 @@ for Name in ${Project[@]}; do
 				   sed 's/chrMT/chrM/g') | \
 				   samtools view -@ $cores -bS -F 256 > $Name.$Species.rigid.reheader.unique.st.bam
 			else
-                            cat $Name.$Species.st.header.sam <(samtools view -@ $cores $Name.$Species.st.bam | \
+				cat $Name.$Species.st.header.sam <(samtools view -@ $cores $Name.$Species.st.bam | \
 				   sed 's/chrMT/chrM/g')	| \
 				   samtools view -@ $cores -bS -q 30  > $Name.$Species.rigid.reheader.unique.st.bam
 			fi
@@ -407,7 +409,7 @@ for Name in ${Project[@]}; do
 			if [ -f $Name.$Species.bed.gz ]; then
 			    echo "Skip converting bam to bed.gz"
 			else
-                            echo "Convert namesort.bam to bed.gz & mark duplicates"
+				echo "Convert namesort.bam to bed.gz & mark duplicates"
 			    if [ ${oneread[$index]} == F ]; then
 				bedtools bamtobed -i $Name.$Species.namesort.bam -bedpe | \
 				    sed 's/_/\t/g' | \
@@ -451,9 +453,9 @@ for Name in ${Project[@]}; do
 			    fi
 			fi
 			# convert to a bam file for QC
-                        bedToBam -i <(zcat $Name.$Species.bed.gz) -g $genomeBed/$Species.chrom.sizes | samtools sort -@ $cores -m 2G - > $Name.$Species.rmdup.bam
-                        samtools index -@ $cores $Name.$Species.rmdup.bam
-                    fi
+			bedToBam -i <(zcat $Name.$Species.bed.gz) -g $genomeBed/$Species.chrom.sizes | samtools sort -@ $cores -m 2G - > $Name.$Species.rmdup.bam
+			samtools index -@ $cores $Name.$Species.rmdup.bam
+			fi
 		fi
 				       
 		# count reads for ATAC
@@ -479,7 +481,7 @@ for Name in ${Project[@]}; do
 		fi
 
 		# remove barcode with low counts from the fragment file for ATAC
-                if [ ${Type[$index]} == "ATAC" ] ; then
+		if [ ${Type[$index]} == "ATAC" ] ; then
 		    if [ -f $Name.$Species.fragments.tsv.gz ]; then
 			echo "Skip removing low counts barcode combination"
                     else
@@ -521,16 +523,16 @@ for Name in ${Project[@]}; do
 			if [ -f $dir/fastqs/$Name.$Species2.exon.featureCounts.bam ] || [ -f $dir/fastqs/$Name.$Species2.wdup.bam.bai ]; then
 			    echo "Skip exon feasure count"
 			else
-		    	    # excliude multimapping, uniquely mapped reads only, -Q 30, for real sample, might consider include multi-mapping
+				# excliude multimapping, uniquely mapped reads only, -Q 30, for real sample, might consider include multi-mapping
 			    echo "Feature counting on exons"
 			    # count exon
-                            if [ ${keepMultiMapping[$index]} == "T" ]; then
-				featureCounts -T $cores -Q 0 -M -a $myPATH/gtf/$Species2.$refgene.gtf -t exon -g $genename \
+				if [ ${keepMultiMapping[$index]} == "T" ]; then
+					featureCounts -T $cores -Q 0 -M -a $myPATH/gtf/$Species2.$refgene.gtf -t exon -g $genename \
                                     -o $Name.$Species2.feature.count.txt -R BAM $Name.$Species2.rigid.reheader.unique.st.bam >>$dir/Run.log
-                            else
-				featureCounts -T $cores -Q 30 -a $myPATH/gtf/$Species2.$refgene.gtf -t exon -g $genename \
+				else
+					featureCounts -T $cores -Q 30 -a $myPATH/gtf/$Species2.$refgene.gtf -t exon -g $genename \
                                     -o $Name.$Species2.feature.count.txt -R BAM $Name.$Species2.rigid.reheader.unique.st.bam >>$dir/Run.log
-                            fi
+				fi
 			    # Extract reads that assigned to genes
 			    mv $Name.$Species2.rigid.reheader.unique.st.bam.featureCounts.bam $Name.$Species2.exon.featureCounts.bam
 			fi
@@ -566,59 +568,61 @@ for Name in ${Project[@]}; do
 			else
 			    echo "Group reads to unique UMIs"
 			    if [ $mode == "regular" ]; then
-				## this is previously used. Seems to get more slant and fewer UMIs, but get accurate lib size estimation
-				umi_tools group --extract-umi-method=read_id \
+					## this is previously used. Seems to get more slant and fewer UMIs, but get accurate lib size estimation
+					umi_tools group --extract-umi-method=read_id \
                                           --per-gene --gene-tag=XT --per-cell \
                                           -I $dir/fastqs/$Name.$Species2.wdup.bam \
                                           --output-bam -S $dir/fastqs/$Name.$Species2.grouped.bam \
                                           --group-out=$dir/fastqs/$Name.$Species2.groups.tsv --skip-tags-regex=Unassigned >>$dir/Run.log
 				
 			    else
-				## own UMI dedup by matching bc-umi-align position
-				if [ ${N6[$index]} == "F" ]; then
-                                    samtools view -@ $cores $Name.$Species2.wdup.bam | grep XT:Z: | \
-					sed 's/Unassigned_Ambiguity/discard/g' | \
-					sed 's/Unassigned_MappingQuality/discard/g' | \
-					awk 'gsub(/[_]/,"\t", $1)' | \
-					awk -v OFS='\t' '{if($NF ~/discard/){$NF=$(NF-1)} print $5, $6, $2, $3, $NF}' | \
-					sed 's/XT:Z://g' > $Name.$Species2.wdup.bed
-                                    # remove dup reads
-                                    python3 $myPATH/rm_dup_barcode_UMI_v3.py \
-                                            -i $Name.$Species2.wdup.bed -o $Name.$Species2.groups.tsv --m 1
-                                    rm $Name.$Species2.wdup.bed
-				else
-				    ## group poly T reads by UMI and cutting position
-				    samtools view -@ $cores $Name.$Species2.wdup.bam | \
-					grep PT:i:1 | \
-					grep XT:Z: | \
-                                        sed 's/Unassigned_Ambiguity/discard/g' | \
-                                        sed 's/Unassigned_MappingQuality/discard/g' | \
-                                        awk 'gsub(/[_]/,"\t", $1)' | \
-                                        awk -v OFS='\t' '{if($NF ~/discard/){$NF=$(NF-1)} print $5, $6, $2, $3, $NF}' | \
-                                        sed 's/XT:Z://g' > $Name.$Species2.wdup.dT.bed
+					## own UMI dedup by matching bc-umi-align position
+					if [ ${N6[$index]} == "F" ]; then
+						# expect: chrom_num, start_site, barcode, umi, gene
+						# to get the correct columns, need to make sure read headers are correct like usual illumina followed by index and umi in share seq style
+						samtools view -@ $cores $Name.$Species2.wdup.bam | grep XT:Z: | \
+							sed 's/Unassigned_Ambiguity/discard/g' | \
+							sed 's/Unassigned_MappingQuality/discard/g' | \
+							awk '{gsub(/[_]/,"\t"); print}' | \
+							awk -v OFS='\t' '{if($NF ~/discard/){$NF=$(NF-1)} print $5, $6, $2, $3, $NF}' | \
+							sed 's/XT:Z://g' > $Name.$Species2.wdup.bed
+						# remove dup reads
+						python3 $myPATH/rm_dup_barcode_UMI_v3.py \
+								-i $Name.$Species2.wdup.bed -o $Name.$Species2.groups.tsv --m 1
+						rm $Name.$Species2.wdup.bed
+					else
+						## group poly T reads by UMI and cutting position
+						samtools view -@ $cores $Name.$Species2.wdup.bam | \
+							grep PT:i:1 | \
+							grep XT:Z: | \
+							sed 's/Unassigned_Ambiguity/discard/g' | \
+							sed 's/Unassigned_MappingQuality/discard/g' | \
+							awk '{gsub(/[_]/,"\t"); print}' | \
+							awk -v OFS='\t' '{if($NF ~/discard/){$NF=$(NF-1)} print $5, $6, $2, $3, $NF}' | \
+							sed 's/XT:Z://g' > $Name.$Species2.wdup.dT.bed
 
-				    # remove dup reads
-                                    python3 $myPATH/rm_dup_barcode_UMI_v3.py \
-                                            -i $Name.$Species2.wdup.dT.bed -o $Name.$Species2.groups.dT.tsv --m 1
-                                    rm $Name.$Species2.wdup.dT.bed
+						# remove dup reads
+						python3 $myPATH/rm_dup_barcode_UMI_v3.py \
+								-i $Name.$Species2.wdup.dT.bed -o $Name.$Species2.groups.dT.tsv --m 1
+						rm $Name.$Species2.wdup.dT.bed
 
-				     ## group N6 reads by gene, barcode and cutting position
-                                    samtools view -@ $cores $Name.$Species2.wdup.bam | \
-					grep PT:i:0 | \
-					grep XT:Z: | \
-                                        sed 's/Unassigned_Ambiguity/discard/g' | \
-                                        sed 's/Unassigned_MappingQuality/discard/g' | \
-                                        awk 'gsub(/[_]/,"\t", $1)' | \
-                                        awk -v OFS='\t' '{if($NF ~/discard/){$NF=$(NF-1)} print $5"_"$6, $2, $NF}' | \
-                                        sed 's/XT:Z://g' > $Name.$Species2.wdup.N6.bed
-				    
-                                    # remove dup reads
-				    cat $Name.$Species2.wdup.N6.bed | \
-					sort --parallel=$cores -S 24G -k1,1 -k2,2 -k3,3 | \
-					uniq -c | \
-					awk -v OFS='\t' '{print $3, $4, $1, $2}' > $Name.$Species2.groups.N6.tsv
-				    rm $Name.$Species2.wdup.N6.bed
-				fi
+						## group N6 reads by gene, barcode and cutting position
+						samtools view -@ $cores $Name.$Species2.wdup.bam | \
+							grep PT:i:0 | \
+							grep XT:Z: | \
+							sed 's/Unassigned_Ambiguity/discard/g' | \
+							sed 's/Unassigned_MappingQuality/discard/g' | \
+							awk '{gsub(/[_]/,"\t"); print}' | \
+							awk -v OFS='\t' '{if($NF ~/discard/){$NF=$(NF-1)} print $5"_"$6, $2, $NF}' | \
+							sed 's/XT:Z://g' > $Name.$Species2.wdup.N6.bed
+						
+						# remove dup reads
+						cat $Name.$Species2.wdup.N6.bed | \
+							sort --parallel=$cores -S 24G -k1,1 -k2,2 -k3,3 | \
+							uniq -c | \
+							awk -v OFS='\t' '{print $3, $4, $1, $2}' > $Name.$Species2.groups.N6.tsv
+							rm $Name.$Species2.wdup.N6.bed
+					fi
 			    fi
 			fi
 			# convert groupped UMI to bed file
@@ -630,29 +634,29 @@ for Name in ${Project[@]}; do
 				if [ $mode == "regular" ]; then
 				    # in regular mode, duplicate UMI reads are kept in the tsv, so I remove those reads first (awk 'NR==1{ id="N"} {if(id != $11 ) {id = $11; print $2, $6, $10}}')
 				    less $dir/fastqs/$Name.$Species2.groups.tsv | \
-					awk 'gsub(/[_]/,"\t", $1)' | \
-                                       	awk 'FNR>1 {if($10 >1){if($9 != "GGGGGGGGGG"){print}}}' | \
-                                        awk 'NR==1{ id="N"} {if(id != $11 ) {id = $11; print $2, $6, $10}}' | \
-                                        awk -v OFS="\t" 'NR==1{ t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} \
-                                            else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}}' | \
-                                        pigz --fast -p $cores > $Name.$Species2.bed.gz
+						awk '{gsub(/[_]/,"\t"); print}' | \
+						awk 'FNR>1 {if($10 >1){if($9 != "GGGGGGGGGG"){print}}}' | \
+						awk 'NR==1{ id="N"} {if(id != $11 ) {id = $11; print $2, $6, $10}}' | \
+						awk -v OFS="\t" 'NR==1{ t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} \
+							else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}}' | \
+						pigz --fast -p $cores > $Name.$Species2.bed.gz
 				else
 				    less $dir/fastqs/$Name.$Species2.groups.tsv | \
-					awk -v OFS="\t" '{if($3 >1){print}}' | \
-					sort  --parallel=$cores -S 24G -k1,1 -k2,2 | \
-					awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}} END {print t1, t2, umisum, readsum}' | \
-                                        pigz --fast -p $cores > $Name.$Species2.bed.gz
+						awk -v OFS="\t" '{if($3 >1){print}}' | \
+						sort  --parallel=$cores -S 24G -k1,1 -k2,2 | \
+						awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}} END {print t1, t2, umisum, readsum}' | \
+						pigz --fast -p $cores > $Name.$Species2.bed.gz
 				fi
 			    else
 				echo "Convert to bed file"
 				if [ $mode == "regular" ]; then
 				    ## count reads per gene
 				    less $dir/fastqs/$Name.$Species2.groups.tsv | \
-					awk 'gsub(/[_]/,"\t", $1)' | \
-					awk 'FNR>1 {if($9 != "GGGGGGGGGG"){print}}' | \
-					awk 'NR==1 { id="N"} {if(id != $11 ) {id = $11; print $2, $6, $10}}' | \
-					awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}}' | \
-					pigz --fast -p $cores > $Name.$Species2.bed.gz
+						awk '{gsub(/[_]/,"\t"); print}' | \
+						awk 'FNR>1 {if($9 != "GGGGGGGGGG"){print}}' | \
+						awk 'NR==1 { id="N"} {if(id != $11 ) {id = $11; print $2, $6, $10}}' | \
+						awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}}' | \
+						pigz --fast -p $cores > $Name.$Species2.bed.gz
 					
 					## 3rd column is umi, 4th column is read
 					## note: difference between these two versions of groups.tsv
@@ -660,17 +664,16 @@ for Name in ${Project[@]}; do
 					## 2) my script already collpsed them at alignment position level
 				else
 				    if [ ${N6[$index]} == "F" ]; then
-					less $dir/fastqs/$Name.$Species2.groups.tsv | \
-					    sort --parallel=$cores -S 24G -k1,1 -k2,2 | \
-					    awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}} END {print t1, t2, umisum, readsum}' | \
-					    pigz --fast -p $cores > $Name.$Species2.bed.gz
+						less $dir/fastqs/$Name.$Species2.groups.tsv | \
+							sort --parallel=$cores -S 24G -k1,1 -k2,2 | \
+							awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}} END {print t1, t2, umisum, readsum}' | \
+							pigz --fast -p $cores > $Name.$Species2.bed.gz
 				    else
-					## count both dT and N6 UMIs
-					cat $dir/fastqs/$Name.$Species2.groups.dT.tsv $dir/fastqs/$Name.$Species2.groups.N6.tsv | \
-					    sort --parallel=$cores -S 24G -k1,1 -k2,2 | \
-                                            awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}} END {print t1, t2, umisum, readsum}' | \
-                                            pigz --fast -p $cores > $Name.$Species2.bed.gz
-					
+						## count both dT and N6 UMIs
+						cat $dir/fastqs/$Name.$Species2.groups.dT.tsv $dir/fastqs/$Name.$Species2.groups.N6.tsv | \
+							sort --parallel=$cores -S 24G -k1,1 -k2,2 | \
+							awk -v OFS="\t" 'NR==1 { t1=$1;t2=$2;readsum=0; umisum=0} {if(t1==$1 && t2==$2) {readsum+=$3; umisum+=1} else {print t1, t2, umisum, readsum; t1=$1;t2=$2;umisum=1;readsum=$3}} END {print t1, t2, umisum, readsum}' | \
+							pigz --fast -p $cores > $Name.$Species2.bed.gz
 				    fi
 				fi
 			    fi
@@ -680,21 +683,21 @@ for Name in ${Project[@]}; do
 			if [ -f $Name.$Species2.filtered.counts.csv ] || [ -f $Name.$Species.filtered.counts.csv.gz ]; then
                             echo "found $Name.$Species.filtered.counts.csv"
 			else
-                            echo "count unfiltered reads"
+				echo "count unfiltered reads"
 			    zcat $Name.$Species2.bed.gz | \
-				awk -v OFS='\t' '{a[$1] += $4} END{for (i in a) print a[i], i}' | \
-				awk -v OFS='\t' '{if($1 >= '${ReadsPerBarcode[$index]}') print }'> $Name.$Species2.wdup.RG.freq.bed
-                            /usr/local/bin/Rscript $myPATH/sum_reads_v2.R $dir/fastqs/ $Name.$Species2.wdup.RG.freq.bed --save
-                            mv $Name.$Species2.wdup.RG.freq.bed.csv $Name.$Species2.unfiltered.counts.csv
+					awk -v OFS='\t' '{a[$1] += $4} END{for (i in a) print a[i], i}' | \
+					awk -v OFS='\t' '{if($1 >= '${ReadsPerBarcode[$index]}') print }'> $Name.$Species2.wdup.RG.freq.bed
+				Rscript $myPATH/sum_reads_v2.R $dir/fastqs/ $Name.$Species2.wdup.RG.freq.bed --save
+				mv $Name.$Species2.wdup.RG.freq.bed.csv $Name.$Species2.unfiltered.counts.csv
 
-                            echo "count filtered reads"
-                            zcat $Name.$Species2.bed.gz | \
-				awk -v OFS='\t' '{a[$1] += $3} END{for (i in a) print a[i], i}' | \
-				awk -v OFS='\t' '{if($1 >= '${ReadsPerBarcode[$index]}') print }' > $Name.$Species2.rmdup.RG.freq.bed
-                            /usr/local/bin/Rscript $myPATH/sum_reads_v2.R $dir/fastqs/ $Name.$Species2.rmdup.RG.freq.bed --save
-                            mv $Name.$Species2.rmdup.RG.freq.bed.csv $Name.$Species2.filtered.counts.csv
+				echo "count filtered reads"
+				zcat $Name.$Species2.bed.gz | \
+					awk -v OFS='\t' '{a[$1] += $3} END{for (i in a) print a[i], i}' | \
+					awk -v OFS='\t' '{if($1 >= '${ReadsPerBarcode[$index]}') print }' > $Name.$Species2.rmdup.RG.freq.bed
+				Rscript $myPATH/sum_reads_v2.R $dir/fastqs/ $Name.$Species2.rmdup.RG.freq.bed --save
+				mv $Name.$Species2.rmdup.RG.freq.bed.csv $Name.$Species2.filtered.counts.csv
 
-                            rm $Name.$Species2.wdup.RG.freq.bed $Name.$Species2.rmdup.RG.freq.bed
+				rm $Name.$Species2.wdup.RG.freq.bed $Name.$Species2.rmdup.RG.freq.bed
 			fi		
 			
 			# remove barcode combination that has less then N reads
@@ -710,31 +713,33 @@ for Name in ${Project[@]}; do
 		    done
 		fi
 		
-		# Gene body coverage and reads distribution
-		if [ ${Type[$index]} == "RNA" ]; then
-		    # split bam to hg and mm
-		    cd $dir/fastqs/
-		    for Species2 in ${Genome2[@]}; do
-			if [ -f $dir/fastqs/$Name.$Species2.read_distribution.txt ]; then
-			    echo "Skip calculate read disbution"
-			else
-			    echo "Calculate read distribution"
-			    if [ $Runtype = QC ]; then
-				read_distribution.py -i $dir/fastqs/$Name.$Species2.wdup.bam -r $genomeBed/$Species2.UCSC_RefSeq.bed > $Name.$Species2.read_distribution.txt 2>>$dir/Run.log
-			    else
-				# only use 1% of reads
-				samtools view -s 0.01 -o $dir/fastqs/temp.bam $dir/fastqs/$Name.$Species2.wdup.bam
-				read_distribution.py -i $dir/fastqs/temp.bam -r $genomeBed/$Species2.UCSC_RefSeq.bed > $Name.$Species2.read_distribution.txt 2>>$dir/Run.log
-				rm $dir/fastqs/temp.bam
-			    fi
-			    # plot reads disbution
-			    tail -n +5 $Name.$Species2.read_distribution.txt | head -n -1 > temp1.txt
-			    head -n 3  $Name.$Species2.read_distribution.txt | grep Assigned | sed 's/Total Assigned Tags//g' | sed 's/ //g' > temp2.txt
-			    /usr/local/bin/Rscript $myPATH/Read_distribution.R $dir/fastqs/ $Name.$Species2 --save
-			    rm temp1.txt temp2.txt
-			fi
-		    done
-		fi 
+		# SKIP because mm10 UCSC_RefSeq.bed is corrupted. The last row is missing the last column.
+
+		# # Gene body coverage and reads distribution
+		# if [ ${Type[$index]} == "RNA" ]; then
+		#     # split bam to hg and mm
+		#     cd $dir/fastqs/
+		#     for Species2 in ${Genome2[@]}; do
+		# 	if [ -f $dir/fastqs/$Name.$Species2.read_distribution.txt ]; then
+		# 	    echo "Skip calculate read disbution"
+		# 	else
+		# 	    echo "Calculate read distribution"
+		# 	    if [ $Runtype = QC ]; then
+		# 		read_distribution.py -i $dir/fastqs/$Name.$Species2.wdup.bam -r $genomeBed/$Species2.UCSC_RefSeq.bed > $Name.$Species2.read_distribution.txt 2>>$dir/Run.log
+		# 	    else
+		# 		# only use 1% of reads
+		# 		samtools view -s 0.01 -o $dir/fastqs/temp.bam $dir/fastqs/$Name.$Species2.wdup.bam
+		# 		read_distribution.py -i $dir/fastqs/temp.bam -r $genomeBed/$Species2.UCSC_RefSeq.bed > $Name.$Species2.read_distribution.txt 2>>$dir/Run.log
+		# 		rm $dir/fastqs/temp.bam
+		# 	    fi
+		# 	    # plot reads disbution
+		# 	    tail -n +5 $Name.$Species2.read_distribution.txt | head -n -1 > temp1.txt
+		# 	    head -n 3  $Name.$Species2.read_distribution.txt | grep Assigned | sed 's/Total Assigned Tags//g' | sed 's/ //g' > temp2.txt
+		# 	    Rscript $myPATH/Read_distribution.R $dir/fastqs/ $Name.$Species2 --save
+		# 	    rm temp1.txt temp2.txt
+		# 	fi
+		#     done
+		# fi 
 
 		if [ ${Type[$index]} == "ATAC" ]; then
 		    # get final quality stats
@@ -764,7 +769,7 @@ for Name in ${Project[@]}; do
 	    if [ ${Type[$index]} == "RNA" ]; then
 	  	# plot UMI/cell or gene/cell
 		echo "Convert bed to UMI count matrix, plot UMI_gene_perCell, generate h5"
-		/usr/local/bin/Rscript $myPATH/UMI_gene_perCell_plot_v3.R $dir/fastqs/ $Name.$Species2 --save
+		Rscript $myPATH/UMI_gene_perCell_plot_v3.R $dir/fastqs/ $Name.$Species2 --save
 	    fi
 	done
 
@@ -773,25 +778,25 @@ for Name in ${Project[@]}; do
 	    echo "Found $Name.counts.csv, skip calculate lib size"
 	else
 	    echo "Estimate lib size"
-            if [ ${Genomes[$index]} == "both" ]; then
-		if [ -f $Name.hg19.unfiltered.counts.csv ] && [ ! -f $Name.hg19.filtered.counts.csv ]; then
-		    cp $Name.hg19.unfiltered.counts.csv $Name.hg19.filtered.counts.csv
-		    echo "Error: Could locate $Name.hg19.filtered.counts.csv"
-		fi
-		if [ -f $Name.mm10.unfiltered.counts.csv ] && [ ! -f $Name.mm10.filtered.counts.csv ]; then
-		    cp $Name.mm10.unfiltered.counts.csv $Name.mm10.filtered.counts.csv
-		    echo "Error: Could locate $Name.mm10.filtered.counts.csv"
-		fi
-		if [ -f $Name.hg19.unfiltered.counts.csv ] && [ -f $Name.mm10.unfiltered.counts.csv ]; then
-                    echo "Calcuating library size for $Name"
-		    /usr/local/bin/Rscript $myPATH/lib_size_sc_V5_species_mixing.R ./ $Name ${ReadsPerBarcode[$index]} ${Type[$index]} --save
-		fi
-	    else
-		if [ -f $Name.${Genomes[$index]}.unfiltered.counts.csv ] && [ ! -f $Name.${Genomes[$index]}.filtered.counts.csv ]; then
-		    cp $Name.${Genomes[$index]}.unfiltered.counts.csv $Name.${Genomes[$index]}.filtered.counts.csv
-		else
-		    /usr/local/bin/Rscript $myPATH/lib_size_sc_V5_single_species.R ./ $Name ${ReadsPerBarcode[$index]} ${Genomes[$index]} ${Type[$index]} --save
-		fi
+		if [ ${Genomes[$index]} == "both" ]; then
+			if [ -f $Name.hg19.unfiltered.counts.csv ] && [ ! -f $Name.hg19.filtered.counts.csv ]; then
+				cp $Name.hg19.unfiltered.counts.csv $Name.hg19.filtered.counts.csv
+				echo "Error: Could locate $Name.hg19.filtered.counts.csv"
+			fi
+			if [ -f $Name.mm10.unfiltered.counts.csv ] && [ ! -f $Name.mm10.filtered.counts.csv ]; then
+				cp $Name.mm10.unfiltered.counts.csv $Name.mm10.filtered.counts.csv
+				echo "Error: Could locate $Name.mm10.filtered.counts.csv"
+			fi
+			if [ -f $Name.hg19.unfiltered.counts.csv ] && [ -f $Name.mm10.unfiltered.counts.csv ]; then
+				echo "Calcuating library size for $Name"
+				Rscript $myPATH/lib_size_sc_V5_species_mixing.R ./ $Name ${ReadsPerBarcode[$index]} ${Type[$index]} --save
+			fi
+			else
+			if [ -f $Name.${Genomes[$index]}.unfiltered.counts.csv ] && [ ! -f $Name.${Genomes[$index]}.filtered.counts.csv ]; then
+				cp $Name.${Genomes[$index]}.unfiltered.counts.csv $Name.${Genomes[$index]}.filtered.counts.csv
+			else
+				Rscript $myPATH/lib_size_sc_V5_single_species.R ./ $Name ${ReadsPerBarcode[$index]} ${Genomes[$index]} ${Type[$index]} --save
+			fi
 	    fi
 	fi
 	if [ ! -d $dir/$Name/ ]; then 
@@ -810,40 +815,40 @@ if [ -d $dir/temp/ ]; then rm -r $dir/temp/; fi
 mkdir $dir/temp/
 for Name in ${Project[@]}; do
     if [ ${Type[$index]} == "ATAC" ]; then
-	if [ ${Genomes[$index]} == "both" ]; then
-	    Genome2=(hg19 mm10)
-	    for Species in ${Genome2[@]}; do
-		echo $Name.$Species >> Names.atac.xls
-		mkdir $dir/temp/$Name.$Species/
-		cp $dir/$Name/$Name.$Species.dups.log $dir/temp/$Name.$Species/
-		cp $dir/$Name/$Name.$Species.align.log $dir/temp/$Name.$Species/
-		cp $dir/$Name/$Name.$Species.stats.log $dir/temp/$Name.$Species/
-		cp $dir/$Name/$Name.$Species.rmdup.hist_data.log $dir/temp/$Name.$Species/
-		cp $dir/$Name/$Name.$Species.RefSeqTSS $dir/temp/$Name.$Species/
-		let "count=count+1"
+		if [ ${Genomes[$index]} == "both" ]; then
+			Genome2=(hg19 mm10)
+			for Species in ${Genome2[@]}; do
+				echo $Name.$Species >> Names.atac.xls
+				mkdir $dir/temp/$Name.$Species/
+				cp $dir/$Name/$Name.$Species.dups.log $dir/temp/$Name.$Species/
+				cp $dir/$Name/$Name.$Species.align.log $dir/temp/$Name.$Species/
+				cp $dir/$Name/$Name.$Species.stats.log $dir/temp/$Name.$Species/
+				cp $dir/$Name/$Name.$Species.rmdup.hist_data.log $dir/temp/$Name.$Species/
+				cp $dir/$Name/$Name.$Species.RefSeqTSS $dir/temp/$Name.$Species/
+				let "count=count+1"
             done
         else
             Species=${Genomes[$index]}
-	    echo $Name.$Species >> Names.atac.xls
-	    mkdir $dir/temp/$Name.$Species/
-	    cp $dir/$Name/$Name.$Species.dups.log $dir/temp/$Name.$Species/
-	    cp $dir/$Name/$Name.$Species.align.log $dir/temp/$Name.$Species/
-	    cp $dir/$Name/$Name.$Species.stats.log $dir/temp/$Name.$Species/
-	    cp $dir/$Name/$Name.$Species.rmdup.hist_data.log $dir/temp/$Name.$Species/
-	    cp $dir/$Name/$Name.$Species.RefSeqTSS $dir/temp/$Name.$Species/
-	    let "count=count+1"
-	fi
+			echo $Name.$Species >> Names.atac.xls
+			mkdir $dir/temp/$Name.$Species/
+			cp $dir/$Name/$Name.$Species.dups.log $dir/temp/$Name.$Species/
+			cp $dir/$Name/$Name.$Species.align.log $dir/temp/$Name.$Species/
+			cp $dir/$Name/$Name.$Species.stats.log $dir/temp/$Name.$Species/
+			cp $dir/$Name/$Name.$Species.rmdup.hist_data.log $dir/temp/$Name.$Species/
+			cp $dir/$Name/$Name.$Species.RefSeqTSS $dir/temp/$Name.$Species/
+			let "count=count+1"
+		fi
     fi
     index=$((index + 1))
 done
-cp -r $dir/temp/$Name.$Species/ $dir/temp/$Name.$Species.temp/
 
 if [ $count -eq 0 ]; then
     rm Names.atac.xls
 else
+	cp -r $dir/temp/$Name.$Species/ $dir/temp/$Name.$Species.temp/
     cd $dir/temp/
     cp $dir/Names.atac.xls $dir/temp/
-    /usr/bin/python $myPATH/pySinglesGetAlnStats_sai.py -i ./Names.atac.xls -d ./
+    python $myPATH/pySinglesGetAlnStats_sai.py -i ./Names.atac.xls -d ./
     mv $dir/temp/Names.merged.xls $dir/Names.atac.merged.xls
     mv Names.merged.xls.iSize.txt.mat Names.atac.iSize.txt.mat
 fi
@@ -891,11 +896,11 @@ rm -r $dir/temp/
 pigz --fast -p $cores $dir/*/*.csv
 pigz --fast -p $cores $dir/*/*.groups.tsv
 
-rm $dir/*/*wdup.all.bam* $dir/*/*namesort.bam $dir/igv.log $dir/*/*exon.featureCounts.bam 
-rm $dir/*/*grouped.bam $dir/*/*rigid.reheader.unique.st.bam*
+rm -f $dir/*/*wdup.all.bam* $dir/*/*namesort.bam $dir/igv.log $dir/*/*exon.featureCounts.bam 
+rm -f $dir/*/*grouped.bam $dir/*/*rigid.reheader.unique.st.bam*
 
 if [ $cleanup == "T" ]; then
-    rm $dir/*/*.groups.tsv.gz
+    rm -f $dir/*/*.groups.tsv.gz
 fi
 
 echo "The pipeline is completed!! Author: Sai Ma <sai.ma2@mssm.edu>"

@@ -1,0 +1,38 @@
+name: share-seq
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - r
+  - parallel
+  - fastp
+  - star=2.5.2b
+  - bowtie2
+  - umi_tools
+  - samtools
+  - picard=2.14.1
+  - subread
+  - rseqc
+  - bedtools
+  - Levenshtein
+  - matplotlib
+  - pandas
+  - numpy
+  - pysam
+  - yaml
+  - pyyaml
+  - biopython
+  - r-tidyr
+  - r-matrixstats
+  - r-reshape2
+  - r-data.table
+  - r-r.utils
+  - bioconductor-dropletutils
+  - bioconductor-rhdf5
+  - bioconductor-summarizedexperiment
+  - r-matrix
+  - igvtools
+  - ucsc-wigtobigwig
+  - tqdm

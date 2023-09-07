@@ -53,6 +53,7 @@ if __name__ == "__main__":
     dups = 0
     umiset = dict()
     countset = dict()
+    newposition = False
 
     print("Allow " + str(mismatch) + " mismatch for UMIs")
 

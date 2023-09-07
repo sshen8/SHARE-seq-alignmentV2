@@ -24,6 +24,7 @@ from Bio import AlignIO
 from optparse import OptionParser
 import time
 import io
+from tqdm import tqdm
 
 ##### DEFINE FUNCTIONS #####
 # Reverse complement
@@ -991,7 +992,8 @@ for proj in project.values():
     files_r2[proj] = f2
 #print(files_r1)
 
-start = time.process_time()        
+start = time.process_time()  
+progressbar = tqdm()
 while 1:
     # read lines
     p1_line = p1_rds.readline()
@@ -1150,6 +1152,7 @@ while 1:
                     seqhead2 = seqhead2[ :index] + b"2:N:0:" + str.encode(barcode) + b"\n"
         # align reads to themselves
         i = i+1  # total reads
+        progressbar.update()
 
         # trim reads
         if needtrim == "T":
@@ -1225,3 +1228,6 @@ try:
     print("%.3g" % perc + "% reads demultiplexed")
 except ZeroDivisionError: 
     print("Warning too few reads")
+
+if good_r == 0:
+    sys.exit("Error: No reads demultiplexed. Check if the barcodes are correct")
